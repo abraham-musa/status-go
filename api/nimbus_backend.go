@@ -997,25 +997,6 @@ func (b *nimbusStatusBackend) DisableInstallation(installationID string) error {
 	return nil
 }
 
-// UpdateMailservers on ShhExtService.
-func (b *nimbusStatusBackend) UpdateMailservers(enodes []string) error {
-	// TODO
-	return nil
-	// st, err := b.statusNode.ShhExtService()
-	// if err != nil {
-	// 	return err
-	// }
-	// nodes := make([]*enode.Node, len(enodes))
-	// for i, rawurl := range enodes {
-	// 	node, err := enode.ParseV4(rawurl)
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// 	nodes[i] = node
-	// }
-	// return st.UpdateMailservers(nodes)
-}
-
 // SignHash exposes vanilla ECDSA signing for signing a message for Swarm
 func (b *nimbusStatusBackend) SignHash(hexEncodedHash string) (string, error) {
 	hash, err := types.DecodeHex(hexEncodedHash)
