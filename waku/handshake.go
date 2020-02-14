@@ -18,12 +18,59 @@ import (
 // In the case of RLP, options should be serialized to an array of tuples
 // where the first item is a field name and the second is a RLP-serialized value.
 type statusOptions struct {
-	PoWRequirement       uint64      `rlp:"key=0"` // RLP does not support float64 natively
+	PoWRequirement       *uint64     `rlp:"key=0"` // RLP does not support float64 natively
 	BloomFilter          []byte      `rlp:"key=1"`
-	LightNodeEnabled     bool        `rlp:"key=2"`
-	ConfirmationsEnabled bool        `rlp:"key=3"`
-	RateLimits           RateLimits  `rlp:"key=4"`
+	LightNodeEnabled     *bool       `rlp:"key=2"`
+	ConfirmationsEnabled *bool       `rlp:"key=3"`
+	RateLimits           *RateLimits `rlp:"key=4"`
 	TopicInterest        []TopicType `rlp:"key=5"`
+}
+
+func (s statusOptions) ClearDefaults() statusOptions {
+	if s.PoWRequirement != nil && *s.PoWRequirement == 0 {
+		s.PoWRequirement = nil
+	}
+
+	if s.LightNodeEnabled != nil && !*s.LightNodeEnabled {
+		s.LightNodeEnabled = nil
+	}
+
+	if s.ConfirmationsEnabled != nil && !*s.ConfirmationsEnabled {
+		s.ConfirmationsEnabled = nil
+	}
+
+	if s.RateLimits != nil && s.RateLimits.IsZero() {
+		s.RateLimits = nil
+	}
+
+	return s
+}
+
+func (s statusOptions) FillDefaults() statusOptions {
+	if s.PoWRequirement == nil {
+		var pow uint64 = 0
+		s.PoWRequirement = &pow
+	}
+
+	if s.LightNodeEnabled == nil {
+		lightNodeEnabled := false
+		s.LightNodeEnabled = &lightNodeEnabled
+	}
+
+	if s.ConfirmationsEnabled == nil {
+		confirmationsEnabled := false
+		s.ConfirmationsEnabled = &confirmationsEnabled
+	}
+
+	if s.RateLimits == nil {
+		s.RateLimits = &RateLimits{}
+	}
+
+	if s.BloomFilter == nil {
+		s.BloomFilter = MakeFullNodeBloom()
+	}
+
+	return s
 }
 
 var idxFieldKey = make(map[int]string)
@@ -48,24 +95,34 @@ var keyFieldIdx = func() map[string]int {
 	return result
 }()
 
-func (o statusOptions) PoWRequirementF() float64 {
-	return math.Float64frombits(o.PoWRequirement)
+func (o statusOptions) PoWRequirementF() *float64 {
+	if o.PoWRequirement == nil {
+		return nil
+	}
+	result := math.Float64frombits(*o.PoWRequirement)
+	return &result
 }
 
 func (o *statusOptions) SetPoWRequirementFromF(val float64) {
-	o.PoWRequirement = math.Float64bits(val)
+	requirement := math.Float64bits(val)
+	o.PoWRequirement = &requirement
 }
 
 func (o statusOptions) EncodeRLP(w io.Writer) error {
 	v := reflect.ValueOf(o)
-	optionsList := make([]interface{}, 0, v.NumField())
+	var optionsList []interface{}
 	for i := 0; i < v.NumField(); i++ {
-		value := v.Field(i).Interface()
-		key, ok := idxFieldKey[i]
-		if !ok {
-			continue
+		field := v.Field(i)
+		if !field.IsNil() {
+			value := field.Interface()
+			key, ok := idxFieldKey[i]
+			if !ok {
+				continue
+			}
+			if value != nil {
+				optionsList = append(optionsList, []interface{}{key, value})
+			}
 		}
-		optionsList = append(optionsList, []interface{}{key, value})
 	}
 	return rlp.Encode(w, optionsList)
 }

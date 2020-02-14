@@ -511,30 +511,32 @@ func waitForServersToStart(t *testing.T) {
 //two generic waku node handshake
 func TestPeerHandshakeWithTwoFullNode(t *testing.T) {
 	w1 := Waku{}
+	var pow uint64 = 123
 	p1 := newPeer(
 		&w1,
 		p2p.NewPeer(enode.ID{}, "test", []p2p.Cap{}),
 		&rwStub{[]interface{}{
 			ProtocolVersion,
-			statusOptions{PoWRequirement: 123},
+			statusOptions{PoWRequirement: &pow},
 		}},
 		nil,
 	)
 	err := p1.handshake()
 	if err != nil {
-		t.Fatal()
+		t.Fatal(err)
 	}
 }
 
 //two generic waku node handshake. one don't send light flag
 func TestHandshakeWithOldVersionWithoutLightModeFlag(t *testing.T) {
 	w1 := Waku{}
+	var pow uint64 = 123
 	p1 := newPeer(
 		&w1,
 		p2p.NewPeer(enode.ID{}, "test", []p2p.Cap{}),
 		&rwStub{[]interface{}{
 			ProtocolVersion,
-			statusOptions{PoWRequirement: 123},
+			statusOptions{PoWRequirement: &pow},
 		}},
 		nil,
 	)
@@ -549,12 +551,14 @@ func TestTwoLightPeerHandshakeRestrictionOff(t *testing.T) {
 	w1 := Waku{}
 	w1.settings.RestrictLightClientsConn = false
 	w1.SetLightClientMode(true)
+	var pow uint64 = 123
+	var lightNodeEnabled bool = true
 	p1 := newPeer(
 		&w1,
 		p2p.NewPeer(enode.ID{}, "test", []p2p.Cap{}),
 		&rwStub{[]interface{}{
 			ProtocolVersion,
-			statusOptions{PoWRequirement: 123, LightNodeEnabled: true},
+			statusOptions{PoWRequirement: &pow, LightNodeEnabled: &lightNodeEnabled},
 		}},
 		nil,
 	)
